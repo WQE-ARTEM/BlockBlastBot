@@ -5,7 +5,6 @@ import android.media.Image
 import com.example.blockblastbot.core.BotConfig
 import com.example.blockblastbot.solver.Piece
 import java.nio.ByteBuffer
-import kotlin.math.abs
 data class RecognizedFrame(val board: ULong, val pieces: List<Piece>, val boardLeft: Float, val boardTop: Float, val cellSize: Float)
 class VisionRecognizer(private val config: BotConfig) {
     fun autoDetect(image: Image): Boolean {
@@ -18,7 +17,7 @@ class VisionRecognizer(private val config: BotConfig) {
             return intArrayOf(buf.get(off).toInt() and 0xFF, buf.get(off + 1).toInt() and 0xFF, buf.get(off + 2).toInt() and 0xFF)
         }
         val bg = getRGB(10, h/2) 
-        fun isBg(c: IntArray): Boolean = abs(c[0] - bg[0]) < 25 && abs(c[1] - bg[1]) < 25 && abs(c[2] - bg[2]) < 25
+        fun isBg(c: IntArray): Boolean = kotlin.math.abs(c[0] - bg[0]) < 25 && kotlin.math.abs(c[1] - bg[1]) < 25 && kotlin.math.abs(c[2] - bg[2]) < 25
         var left = 0
         for (x in 0 until w/2) { if (!isBg(getRGB(x, h/2))) { left = x; break } }
         var right = w - 1
@@ -27,18 +26,6 @@ class VisionRecognizer(private val config: BotConfig) {
         for (y in h/3 downTo 0) { if (!isBg(getRGB(w/2, y))) { top = y; break } }
         val cellSize = (right - left) / 8f
         if (cellSize < w * 0.05f) return false
-        var minTrayY = h; var maxTrayY = 0
-        for (y in (h*7/10) until h) {
-            for (x in 0 until w step 4) {
-                val c = getRGB(x, y)
-                val hsv = FloatArray(3); Color.RGBToHSV(c[0], c[1], c[2], hsv)
-                if (hsv[2] > 0.60f && hsv[1] > 0.35f) {
-                    if (y < minTrayY) minTrayY = y
-                    if (y > maxTrayY) maxTrayY = y
-                }
-            }
-        }
-        if (minTrayY < h) config.trayCenterYRatio = ((minTrayY + maxTrayY) / 2f) / h
         config.boardSideMarginRatio = left / w.toFloat()
         config.boardTopRatio = top / h.toFloat()
         return true
@@ -57,12 +44,19 @@ class VisionRecognizer(private val config: BotConfig) {
             val cy = (bTop + (r + 0.5f) * cellSize).toInt()
             if (isBlock(buf, cx, cy, w, h, rStride, pStride)) boardMask = boardMask or (1UL shl (r * 8 + c))
         }
-        val trayY = h * config.trayCenterYRatio
-        val trayCell = cellSize 
+        
+        // Лоток всегда находится под полем. Берем низ поля и отступаем 1.2 клетки вниз.
+        val bBottom = bTop + (8f * cellSize)
+        val trayY = bBottom + (cellSize * 1.2f)
+        val trayCell = cellSize * 0.6f
         val pieces = mutableListOf<Piece>()
-        for ((idx, sx) in listOf(w * 0.18f, w * 0.50f, w * 0.82f).withIndex()) {
+        
+        // Ищем фигуры в трех колонках (слева, центр, справа), отталкиваясь от краев поля, а не экрана
+        val slotXs = listOf(bLeft + cellSize * 1.5f, bLeft + cellSize * 4f, bLeft + cellSize * 6.5f)
+        
+        for ((idx, sx) in slotXs.withIndex()) {
             val raw = mutableListOf<Pair<Int, Int>>()
-            for (dr in -2..2) for (dc in -2..2) {
+            for (dr in -3..3) for (dc in -3..3) {
                 val px = (sx + dc * trayCell).toInt(); val py = (trayY + dr * trayCell).toInt()
                 if (isBlock(buf, px, py, w, h, rStride, pStride)) raw.add(Pair(dr, dc))
             }
@@ -72,7 +66,6 @@ class VisionRecognizer(private val config: BotConfig) {
                 val midR = (minR + maxR) / 2f
                 val midC = (minC + maxC) / 2f
                 
-                // Ищем самый центральный блок фигуры, чтобы схватить её ровно за него
                 val grabCell = raw.minByOrNull { (it.first - midR) * (it.first - midR) + (it.second - midC) * (it.second - midC) }!!
                 val grabX = sx + grabCell.second * trayCell
                 val grabY = trayY + grabCell.first * trayCell
