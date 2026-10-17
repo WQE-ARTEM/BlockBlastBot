@@ -68,13 +68,14 @@ class ScreenCaptureService : Service() {
         btnAuto.setOnClickListener { engine.autoDetect() }
         
         btnDebug.setOnClickListener {
+            engine.pause() // Ставим на паузу перед снимком
+            btnToggle.text = "СТАРТ"
             engine.getDebugInfo { info ->
-                // Всё это уже в главном потоке, вылетов не будет
                 try {
                     val clipboard = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
                     val clip = ClipData.newPlainText("Bot Debug", info)
                     clipboard.setPrimaryClip(clip)
-                    Toast.makeText(this@ScreenCaptureService, "Скопировано в буфер!", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@ScreenCaptureService, "Скопировано!", Toast.LENGTH_SHORT).show()
                     tvInfo.text = "Скопировано!"
                 } catch (e: Exception) {
                     tvInfo.text = "Ошибка буфера"

@@ -6,21 +6,25 @@ import com.example.blockblastbot.solver.BitboardSolver
 import com.example.blockblastbot.vision.VisionRecognizer
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+
 class BotEngine(private val config: BotConfig, private val readerProvider: () -> ImageReader?) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val recognizer = VisionRecognizer(config)
     private var job: Job? = null
+    private val imageMutex = Mutex() // Защита от одновременного чтения экрана
     private val _status = MutableStateFlow("Остановлен"); val statusFlow: StateFlow<String> = _status
     val isRunning: Boolean get() = job?.isActive == true
     
     fun autoDetect() {
         scope.launch {
             _status.value = "Сканирую экран..."
-            val reader = readerProvider()
-            if (reader == null) { _status.value = "Нет доступа"; return@launch }
-            val img = reader.acquireLatestImage()
-            if (img == null) { _status.value = "Нет кадра"; return@launch }
-            val success = try { recognizer.autoDetect(img) } finally { img.close() }
+            val success = imageMutex.withLock {
+                val reader = readerProvider() ?: return@withLock false
+                val img = reader.acquireLatestImage() ?: return@withLock false
+                try { recognizer.autoDetect(img) } finally { img.close() }
+            }
             _status.value = if (success) "Автонастройка OK!" else "Ошибка настройки"
         }
     }
@@ -28,36 +32,38 @@ class BotEngine(private val config: BotConfig, private val readerProvider: () ->
     fun getDebugInfo(onResult: (String) -> Unit) {
         scope.launch {
             val result = try {
-                val reader = readerProvider()
-                if (reader == null) { "Нет доступа к экрану" }
-                else {
-                    val img = reader.acquireLatestImage()
-                    if (img == null) "Нет кадра"
+                delay(300) // Даем время игре прогрузиться
+                imageMutex.withLock {
+                    val reader = readerProvider()
+                    if (reader == null) { "Нет доступа к экрану" }
                     else {
-                        val rec = try { recognizer.analyzeImage(img) } finally { img.close() }
-                        if (rec == null) "Ошибка зрения"
+                        val img = reader.acquireLatestImage()
+                        if (img == null) "Нет кадра"
                         else {
-                            val sb = StringBuilder()
-                            sb.append("Screen: ${img.width}x${img.height}\n")
-                            sb.append("BoardLeft: ${rec.boardLeft}\n")
-                            sb.append("BoardTop: ${rec.boardTop}\n")
-                            sb.append("CellSize: ${rec.cellSize}\n")
-                            sb.append("BoardMask: ${rec.board}\n")
-                            sb.append("Pieces: ${rec.pieces.size}\n")
-                            for (p in rec.pieces) {
-                                sb.append("- Slot ${p.slotIndex}: GrabX=${p.trayOriginScreen.x}, GrabY=${p.trayOriginScreen.y}, W=${p.width}, H=${p.height}\n")
-                            }
-                            sb.toString()
+                            try {
+                                val rec = recognizer.analyzeImage(img)
+                                if (rec == null) "Ошибка зрения"
+                                else {
+                                    val sb = StringBuilder()
+                                    sb.append("Screen: ${img.width}x${img.height}\n")
+                                    sb.append("MarginRatio: ${config.boardSideMarginRatio}\n")
+                                    sb.append("TopRatio: ${config.boardTopRatio}\n")
+                                    sb.append("BoardLeft: ${rec.boardLeft}\n")
+                                    sb.append("BoardTop: ${rec.boardTop}\n")
+                                    sb.append("CellSize: ${rec.cellSize}\n")
+                                    sb.append("BoardMask: ${rec.board}\n")
+                                    sb.append("Pieces: ${rec.pieces.size}\n")
+                                    for (p in rec.pieces) {
+                                        sb.append("- Slot ${p.slotIndex}: GrabX=${p.trayOriginScreen.x}, GrabY=${p.trayOriginScreen.y}, W=${p.width}, H=${p.height}\n")
+                                    }
+                                    sb.toString()
+                                }
+                            } finally { img.close() }
                         }
                     }
                 }
-            } catch (e: Exception) {
-                "Ошибка: ${e.message}"
-            }
-            // Возвращаем результат строго в Главный поток (UI)
-            withContext(Dispatchers.Main) {
-                onResult(result)
-            }
+            } catch (e: Exception) { "Ошибка: ${e.message}" }
+            withContext(Dispatchers.Main) { onResult(result) }
         }
     }
 
@@ -77,11 +83,12 @@ class BotEngine(private val config: BotConfig, private val readerProvider: () ->
         while (currentCoroutineContext().isActive) {
             val ts = TouchService.instance
             if (ts == null) { _status.value = "Нет TouchService!"; delay(1000L); continue }
-            val reader = readerProvider()
-            if (reader == null) { delay(200L); continue }
-            val img = reader.acquireLatestImage()
-            if (img == null) { delay(200L); continue }
-            val rec = try { recognizer.analyzeImage(img) } finally { img.close() }
+            
+            val rec = imageMutex.withLock {
+                val reader = readerProvider() ?: return@withLock null
+                val img = reader.acquireLatestImage() ?: return@withLock null
+                try { recognizer.analyzeImage(img) } finally { img.close() }
+            }
             
             if (rec == null || rec.pieces.isEmpty()) { _status.value = "Ищу фигуры..."; delay(300L); continue }
             
