@@ -2,10 +2,10 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="wrap_content" android:layout_height="wrap_content" android:background="#CC1E1E1E" android:orientation="horizontal" android:padding="6dp">
     <Button android:id="@+id/btnGrid" android:layout_width="wrap_content" android:layout_height="38dp" android:backgroundTint="#FF9800" android:text="СЕТКА" android:textColor="#FFFFFF" android:textSize="12sp" />
-    <Button android:id="@+id/btnUp" android:layout_width="wrap_content" android:layout_height="38dp" android:layout_marginStart="4dp" android:text="↑" android:textSize="18sp" />
-    <Button android:id="@+id/btnDown" android:layout_width="wrap_content" android:layout_height="38dp" android:layout_marginStart="4dp" android:text="↓" android:textSize="18sp" />
-    <Button android:id="@+id/btnLeft" android:layout_width="wrap_content" android:layout_height="38dp" android:layout_marginStart="4dp" android:text="←" android:textSize="18sp" />
-    <Button android:id="@+id/btnRight" android:layout_width="wrap_content" android:layout_height="38dp" android:layout_marginStart="4dp" android:text="→" android:textSize="18sp" />
+    <Button android:id="@+id/btnUp" android:layout_width="38dp" android:layout_height="38dp" android:layout_marginStart="4dp" android:text="^" android:textSize="18sp" />
+    <Button android:id="@+id/btnDown" android:layout_width="38dp" android:layout_height="38dp" android:layout_marginStart="4dp" android:text="v" android:textSize="18sp" />
+    <Button android:id="@+id/btnLeft" android:layout_width="38dp" android:layout_height="38dp" android:layout_marginStart="4dp" android:text="&lt;" android:textSize="18sp" />
+    <Button android:id="@+id/btnRight" android:layout_width="38dp" android:layout_height="38dp" android:layout_marginStart="4dp" android:text="&gt;" android:textSize="18sp" />
     <Button android:id="@+id/btnOverlayToggle" android:layout_width="wrap_content" android:layout_height="38dp" android:layout_marginStart="6dp" android:backgroundTint="#2E7D32" android:text="СТАРТ" android:textColor="#FFFFFF" android:textSize="12sp" />
     <Button android:id="@+id/btnOverlayStop" android:layout_width="wrap_content" android:layout_height="38dp" android:layout_marginStart="4dp" android:backgroundTint="#C62828" android:text="СТОП" android:textColor="#FFFFFF" android:textSize="12sp" />
 </LinearLayout>

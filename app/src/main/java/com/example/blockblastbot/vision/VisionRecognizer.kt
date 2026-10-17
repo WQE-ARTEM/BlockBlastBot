@@ -15,6 +15,7 @@ class VisionRecognizer(private val config: BotConfig) {
         val bLeft = w * config.boardSideMarginRatio + config.offsetX
         val bTop = h * config.boardTopRatio + config.offsetY
         val cellSize = (w * (1f - config.boardSideMarginRatio*2)) / 8f
+        
         var boardMask = 0UL
         for (r in 0..7) for (c in 0..7) {
             val cx = (bLeft + (c + 0.5f) * cellSize).toInt()
@@ -22,12 +23,17 @@ class VisionRecognizer(private val config: BotConfig) {
             if (isBlock(buf, cx, cy, w, h, rStride, pStride)) boardMask = boardMask or (1UL shl (r * 8 + c))
         }
         val pieces = mutableListOf<Piece>()
-        val trayY = bTop + (8f * cellSize) + (cellSize * 1.5f)
-        val slotXs = listOf(bLeft + cellSize * 1.5f, bLeft + cellSize * 4f, bLeft + cellSize * 6.5f)
+        
+        // Опускаем Y вниз (2 клетки от низа доски) и раздвигаем X (1.5, 4.2, 6.9)
+        val trayY = bTop + (8f * cellSize) + (cellSize * 2.0f)
+        val slotXs = listOf(bLeft + cellSize * 1.5f, bLeft + cellSize * 4.2f, bLeft + cellSize * 6.9f)
+        
         for ((idx, sx) in slotXs.withIndex()) {
             val raw = mutableListOf<Pair<Int, Int>>()
+            // Сканируем область 5x5 вокруг центра слота
             for (dr in -2..2) for (dc in -2..2) {
-                val px = (sx + dc * cellSize).toInt(); val py = (trayY + dr * cellSize).toInt()
+                val px = (sx + dc * cellSize).toInt()
+                val py = (trayY + dr * cellSize).toInt()
                 if (isBlock(buf, px, py, w, h, rStride, pStride)) raw.add(Pair(dr, dc))
             }
             if (raw.isNotEmpty()) {

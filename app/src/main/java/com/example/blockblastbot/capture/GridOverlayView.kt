@@ -14,10 +14,11 @@ class GridOverlayView(context: Context) : View(context) {
             canvas.drawLine(bLeft, bTop + i * cellSize, bLeft + 8 * cellSize, bTop + i * cellSize, paint)
             canvas.drawLine(bLeft + i * cellSize, bTop, bLeft + i * cellSize, bTop + 8 * cellSize, paint)
         }
+        // Рисуем зеленые точки ТАМ ЖЕ, где бот ищет фигуры
         paint.color = Color.GREEN; paint.style = Paint.Style.FILL
-        val trayY = bTop + 8 * cellSize + cellSize * 1.5f
+        val trayY = bTop + (8f * cellSize) + (cellSize * 2.0f)
         canvas.drawCircle(bLeft + cellSize * 1.5f, trayY, 20f, paint)
-        canvas.drawCircle(bLeft + cellSize * 4f, trayY, 20f, paint)
-        canvas.drawCircle(bLeft + cellSize * 6.5f, trayY, 20f, paint)
+        canvas.drawCircle(bLeft + cellSize * 4.2f, trayY, 20f, paint)
+        canvas.drawCircle(bLeft + cellSize * 6.9f, trayY, 20f, paint)
     }
 }
