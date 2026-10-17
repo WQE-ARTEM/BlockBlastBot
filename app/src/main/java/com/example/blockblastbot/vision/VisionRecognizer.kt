@@ -16,21 +16,31 @@ class VisionRecognizer(private val config: BotConfig) {
         val bRight = w * (1f - config.boardSideMarginRatio)
         val cellSize = (bRight - bLeft) / 8f
         val bTop = h * config.boardTopRatio
+        
         var boardMask = 0UL
         for (r in 0..7) for (c in 0..7) {
             val cx = (bLeft + (c + 0.5f) * cellSize).toInt()
             val cy = (bTop + (r + 0.5f) * cellSize).toInt()
             if (isBlock(buf, cx, cy, w, h, rStride, pStride)) boardMask = boardMask or (1UL shl (r * 8 + c))
         }
+        
         val pieces = mutableListOf<Piece>()
-        val slotXs = listOf(bLeft + cellSize * 1.5f, bLeft + cellSize * 4f, bLeft + cellSize * 6.5f)
+        // Центры слотов по ширине экрана (22%, 50%, 78%)
+        val slotXs = listOf(w * 0.22f, w * 0.50f, w * 0.78f)
+        
         val bBottom = bTop + (8f * cellSize)
-        val trayY = bBottom + (cellSize * 1.8f)
+        val trayY = bBottom + (cellSize * 1.2f) // Где-то посередине между полем и низом
+        
         for ((idx, sx) in slotXs.withIndex()) {
             val raw = mutableListOf<Pair<Int, Int>>()
-            for (dr in -3..3) for (dc in -3..3) {
+            // Сканируем только вниз от поля, максимум на 2 клетки выше лотка
+            for (dr in -1..2) for (dc in -2..2) {
                 val px = (sx + dc * cellSize).toInt()
                 val py = (trayY + dr * cellSize).toInt()
+                
+                // ЖЕСТКИЙ ЗАПРЕТ: не смотреть выше, чем на 20 пикселей от низа доски
+                if (py < bBottom + 20) continue 
+                
                 if (isBlock(buf, px, py, w, h, rStride, pStride)) raw.add(Pair(dr, dc))
             }
             if (raw.isNotEmpty()) {
@@ -38,7 +48,10 @@ class VisionRecognizer(private val config: BotConfig) {
                 val maxR = raw.maxOf { it.first }; val maxC = raw.maxOf { it.second }
                 val midR = (minR + maxR) / 2f
                 val midC = (minC + maxC) / 2f
+                
+                // Берем самый центральный блок
                 val grabCell = raw.minByOrNull { (it.first - midR) * (it.first - midR) + (it.second - midC) * (it.second - midC) }!!
+                
                 pieces.add(Piece(
                     slotIndex = idx, 
                     cells = raw.map { Pair(it.first - minR, it.second - minC) }, 
