@@ -8,8 +8,7 @@ import java.nio.ByteBuffer
 data class RecognizedFrame(val board: ULong, val pieces: List<Piece>, val boardLeft: Float, val boardTop: Float, val cellSize: Float)
 class VisionRecognizer(private val config: BotConfig) {
     fun autoDetect(image: Image): Boolean {
-        // Отключено, так как мы задали точные значения вручную
-        return true
+        return true // Отключено, настройки уже идеальные
     }
     fun analyzeImage(image: Image): RecognizedFrame? {
         val plane = image.planes[0]; val buf = plane.buffer
@@ -19,6 +18,7 @@ class VisionRecognizer(private val config: BotConfig) {
         val bRight = w * (1f - config.boardSideMarginRatio)
         val cellSize = (bRight - bLeft) / 8f
         val bTop = h * config.boardTopRatio
+        
         var boardMask = 0UL
         for (r in 0..7) for (c in 0..7) {
             val cx = (bLeft + (c + 0.5f) * cellSize).toInt()
@@ -26,9 +26,10 @@ class VisionRecognizer(private val config: BotConfig) {
             if (isBlock(buf, cx, cy, w, h, rStride, pStride)) boardMask = boardMask or (1UL shl (r * 8 + c))
         }
         
+        // Лоток находится чуть ниже поля. Размер блоков такой же, как на доске.
         val bBottom = bTop + (8f * cellSize)
-        val trayY = bBottom + (cellSize * 1.5f)
-        val trayCell = cellSize * 0.85f // Фигуры в игре чуть меньше клеток на доске
+        val trayY = bBottom + (cellSize * 1.7f)
+        val trayCell = cellSize
         val pieces = mutableListOf<Piece>()
         
         val slotXs = listOf(bLeft + cellSize * 1.5f, bLeft + cellSize * 4f, bLeft + cellSize * 6.5f)
