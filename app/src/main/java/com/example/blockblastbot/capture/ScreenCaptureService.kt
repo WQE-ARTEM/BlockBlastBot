@@ -69,11 +69,16 @@ class ScreenCaptureService : Service() {
         
         btnDebug.setOnClickListener {
             engine.getDebugInfo { info ->
-                val clipboard = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
-                val clip = ClipData.newPlainText("Bot Debug", info)
-                clipboard.setPrimaryClip(clip)
-                Toast.makeText(this, "Скопировано в буфер!", Toast.LENGTH_SHORT).show()
-                tvInfo.text = "Скопировано!"
+                // Всё это уже в главном потоке, вылетов не будет
+                try {
+                    val clipboard = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
+                    val clip = ClipData.newPlainText("Bot Debug", info)
+                    clipboard.setPrimaryClip(clip)
+                    Toast.makeText(this@ScreenCaptureService, "Скопировано в буфер!", Toast.LENGTH_SHORT).show()
+                    tvInfo.text = "Скопировано!"
+                } catch (e: Exception) {
+                    tvInfo.text = "Ошибка буфера"
+                }
             }
         }
 

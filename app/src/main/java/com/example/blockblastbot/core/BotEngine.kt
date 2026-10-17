@@ -27,24 +27,37 @@ class BotEngine(private val config: BotConfig, private val readerProvider: () ->
 
     fun getDebugInfo(onResult: (String) -> Unit) {
         scope.launch {
-            val reader = readerProvider()
-            if (reader == null) { onResult("Нет доступа к экрану"); return@launch }
-            val img = reader.acquireLatestImage()
-            if (img == null) { onResult("Нет кадра"); return@launch }
-            val rec = try { recognizer.analyzeImage(img) } finally { img.close() }
-            if (rec == null) { onResult("Ошибка зрения"); return@launch }
-
-            val sb = StringBuilder()
-            sb.append("Screen: ${img.width}x${img.height}\n")
-            sb.append("BoardLeft: ${rec.boardLeft}\n")
-            sb.append("BoardTop: ${rec.boardTop}\n")
-            sb.append("CellSize: ${rec.cellSize}\n")
-            sb.append("BoardMask: ${rec.board}\n")
-            sb.append("Pieces: ${rec.pieces.size}\n")
-            for (p in rec.pieces) {
-                sb.append("- Slot ${p.slotIndex}: GrabX=${p.trayOriginScreen.x}, GrabY=${p.trayOriginScreen.y}, W=${p.width}, H=${p.height}\n")
+            val result = try {
+                val reader = readerProvider()
+                if (reader == null) { "Нет доступа к экрану" }
+                else {
+                    val img = reader.acquireLatestImage()
+                    if (img == null) "Нет кадра"
+                    else {
+                        val rec = try { recognizer.analyzeImage(img) } finally { img.close() }
+                        if (rec == null) "Ошибка зрения"
+                        else {
+                            val sb = StringBuilder()
+                            sb.append("Screen: ${img.width}x${img.height}\n")
+                            sb.append("BoardLeft: ${rec.boardLeft}\n")
+                            sb.append("BoardTop: ${rec.boardTop}\n")
+                            sb.append("CellSize: ${rec.cellSize}\n")
+                            sb.append("BoardMask: ${rec.board}\n")
+                            sb.append("Pieces: ${rec.pieces.size}\n")
+                            for (p in rec.pieces) {
+                                sb.append("- Slot ${p.slotIndex}: GrabX=${p.trayOriginScreen.x}, GrabY=${p.trayOriginScreen.y}, W=${p.width}, H=${p.height}\n")
+                            }
+                            sb.toString()
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                "Ошибка: ${e.message}"
             }
-            onResult(sb.toString())
+            // Возвращаем результат строго в Главный поток (UI)
+            withContext(Dispatchers.Main) {
+                onResult(result)
+            }
         }
     }
 
