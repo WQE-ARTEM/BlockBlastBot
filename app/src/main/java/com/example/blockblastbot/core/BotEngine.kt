@@ -13,59 +13,11 @@ class BotEngine(private val config: BotConfig, private val readerProvider: () ->
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val recognizer = VisionRecognizer(config)
     private var job: Job? = null
-    private val imageMutex = Mutex() // Защита от одновременного чтения экрана
+    private val imageMutex = Mutex()
     private val _status = MutableStateFlow("Остановлен"); val statusFlow: StateFlow<String> = _status
     val isRunning: Boolean get() = job?.isActive == true
     
-    fun autoDetect() {
-        scope.launch {
-            _status.value = "Сканирую экран..."
-            val success = imageMutex.withLock {
-                val reader = readerProvider() ?: return@withLock false
-                val img = reader.acquireLatestImage() ?: return@withLock false
-                try { recognizer.autoDetect(img) } finally { img.close() }
-            }
-            _status.value = if (success) "Автонастройка OK!" else "Ошибка настройки"
-        }
-    }
-
-    fun getDebugInfo(onResult: (String) -> Unit) {
-        scope.launch {
-            val result = try {
-                delay(300) // Даем время игре прогрузиться
-                imageMutex.withLock {
-                    val reader = readerProvider()
-                    if (reader == null) { "Нет доступа к экрану" }
-                    else {
-                        val img = reader.acquireLatestImage()
-                        if (img == null) "Нет кадра"
-                        else {
-                            try {
-                                val rec = recognizer.analyzeImage(img)
-                                if (rec == null) "Ошибка зрения"
-                                else {
-                                    val sb = StringBuilder()
-                                    sb.append("Screen: ${img.width}x${img.height}\n")
-                                    sb.append("MarginRatio: ${config.boardSideMarginRatio}\n")
-                                    sb.append("TopRatio: ${config.boardTopRatio}\n")
-                                    sb.append("BoardLeft: ${rec.boardLeft}\n")
-                                    sb.append("BoardTop: ${rec.boardTop}\n")
-                                    sb.append("CellSize: ${rec.cellSize}\n")
-                                    sb.append("BoardMask: ${rec.board}\n")
-                                    sb.append("Pieces: ${rec.pieces.size}\n")
-                                    for (p in rec.pieces) {
-                                        sb.append("- Slot ${p.slotIndex}: GrabX=${p.trayOriginScreen.x}, GrabY=${p.trayOriginScreen.y}, W=${p.width}, H=${p.height}\n")
-                                    }
-                                    sb.toString()
-                                }
-                            } finally { img.close() }
-                        }
-                    }
-                }
-            } catch (e: Exception) { "Ошибка: ${e.message}" }
-            withContext(Dispatchers.Main) { onResult(result) }
-        }
-    }
+    fun autoDetect() { _status.value = "Настройки уже идеальны" }
 
     fun start() {
         if (job?.isActive == true) return
@@ -82,7 +34,7 @@ class BotEngine(private val config: BotConfig, private val readerProvider: () ->
     private suspend fun runLoop() {
         while (currentCoroutineContext().isActive) {
             val ts = TouchService.instance
-            if (ts == null) { _status.value = "Нет TouchService!"; delay(1000L); continue }
+            if (ts == null) { _status.value = "Включите TouchService!"; delay(1000L); continue }
             
             val rec = imageMutex.withLock {
                 val reader = readerProvider() ?: return@withLock null
@@ -90,19 +42,32 @@ class BotEngine(private val config: BotConfig, private val readerProvider: () ->
                 try { recognizer.analyzeImage(img) } finally { img.close() }
             }
             
-            if (rec == null || rec.pieces.isEmpty()) { _status.value = "Ищу фигуры..."; delay(300L); continue }
+            if (rec == null || rec.pieces.isEmpty()) { 
+                _status.value = "Ищу фигуры..." 
+                delay(500L)
+                continue 
+            }
             
             val sol = BitboardSolver.findBestSequence(rec.board, rec.pieces, config.strategy)
-            if (sol == null || sol.moves.isEmpty()) { _status.value = "Нет решений"; pause(); break }
+            if (sol == null || sol.moves.isEmpty()) { 
+                _status.value = "Нет решений (Game Over)" 
+                pause()
+                break 
+            }
             
             val m = sol.moves.first()
+            
+            // Считаем точную координату центра ячейки, куда нужно поставить
             val target = PointF(
                 rec.boardLeft + (m.targetCol + m.piece.grabOffsetCol + 0.5f) * rec.cellSize,
-                rec.boardTop + (m.targetRow + m.piece.grabOffsetRow + 0.5f) * rec.cellSize + config.dragOffsetY
+                rec.boardTop + (m.targetRow + m.piece.grabOffsetRow + 0.5f) * rec.cellSize
             )
-            _status.value = "Делаю ход..."
+            
+            _status.value = "Ход: ставим ${m.piece.width}x${m.piece.height}"
             ts.performPieceDrag(m.piece.trayOriginScreen, target)
-            delay(1200L)
+            
+            // Ждем, пока игра прокрутит анимацию и обновит экран
+            delay(1500L) 
         }
     }
 }

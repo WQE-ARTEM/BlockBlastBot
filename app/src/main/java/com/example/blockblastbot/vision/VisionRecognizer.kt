@@ -7,9 +7,8 @@ import com.example.blockblastbot.solver.Piece
 import java.nio.ByteBuffer
 data class RecognizedFrame(val board: ULong, val pieces: List<Piece>, val boardLeft: Float, val boardTop: Float, val cellSize: Float)
 class VisionRecognizer(private val config: BotConfig) {
-    fun autoDetect(image: Image): Boolean {
-        return true // Отключено, настройки уже идеальные
-    }
+    fun autoDetect(image: Image): Boolean = true 
+    
     fun analyzeImage(image: Image): RecognizedFrame? {
         val plane = image.planes[0]; val buf = plane.buffer
         val w = image.width; val h = image.height
@@ -26,34 +25,34 @@ class VisionRecognizer(private val config: BotConfig) {
             if (isBlock(buf, cx, cy, w, h, rStride, pStride)) boardMask = boardMask or (1UL shl (r * 8 + c))
         }
         
-        // Лоток находится чуть ниже поля. Размер блоков такой же, как на доске.
-        val bBottom = bTop + (8f * cellSize)
-        val trayY = bBottom + (cellSize * 1.7f)
-        val trayCell = cellSize
         val pieces = mutableListOf<Piece>()
-        
         val slotXs = listOf(bLeft + cellSize * 1.5f, bLeft + cellSize * 4f, bLeft + cellSize * 6.5f)
+        
+        // Лоток жестко привязан к низу доски (через 1.8 клетки от низа)
+        val bBottom = bTop + (8f * cellSize)
+        val trayY = bBottom + (cellSize * 1.8f)
         
         for ((idx, sx) in slotXs.withIndex()) {
             val raw = mutableListOf<Pair<Int, Int>>()
+            // Ищем блоки вокруг центра слота
             for (dr in -3..3) for (dc in -3..3) {
-                val px = (sx + dc * trayCell).toInt(); val py = (trayY + dr * trayCell).toInt()
+                val px = (sx + dc * cellSize).toInt()
+                val py = (trayY + dr * cellSize).toInt()
                 if (isBlock(buf, px, py, w, h, rStride, pStride)) raw.add(Pair(dr, dc))
             }
             if (raw.isNotEmpty()) {
                 val minR = raw.minOf { it.first }; val minC = raw.minOf { it.second }
                 val maxR = raw.maxOf { it.first }; val maxC = raw.maxOf { it.second }
+                
+                // Вычисляем, за какой блок схватиться (самый центральный)
                 val midR = (minR + maxR) / 2f
                 val midC = (minC + maxC) / 2f
-                
                 val grabCell = raw.minByOrNull { (it.first - midR) * (it.first - midR) + (it.second - midC) * (it.second - midC) }!!
-                val grabX = sx + grabCell.second * trayCell
-                val grabY = trayY + grabCell.first * trayCell
                 
                 pieces.add(Piece(
                     slotIndex = idx, 
                     cells = raw.map { Pair(it.first - minR, it.second - minC) }, 
-                    trayOriginScreen = PointF(grabX, grabY),
+                    trayOriginScreen = PointF(sx + grabCell.second * cellSize, trayY + grabCell.first * cellSize),
                     grabOffsetRow = grabCell.first - minR,
                     grabOffsetCol = grabCell.second - minC
                 ))
@@ -61,6 +60,7 @@ class VisionRecognizer(private val config: BotConfig) {
         }
         return RecognizedFrame(boardMask, pieces, bLeft, bTop, cellSize)
     }
+    
     private fun isBlock(buf: ByteBuffer, x: Int, y: Int, w: Int, h: Int, rStride: Int, pStride: Int): Boolean {
         val cx = x.coerceIn(1, w - 2); val cy = y.coerceIn(1, h - 2)
         val off = cy * rStride + cx * pStride
