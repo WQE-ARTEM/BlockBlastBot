@@ -8,26 +8,7 @@ import java.nio.ByteBuffer
 data class RecognizedFrame(val board: ULong, val pieces: List<Piece>, val boardLeft: Float, val boardTop: Float, val cellSize: Float)
 class VisionRecognizer(private val config: BotConfig) {
     fun autoDetect(image: Image): Boolean {
-        val plane = image.planes[0]; val buf = plane.buffer
-        val w = image.width; val h = image.height
-        val pStride = plane.pixelStride; val rStride = plane.rowStride
-        fun getRGB(x: Int, y: Int): IntArray {
-            val off = y * rStride + x * pStride
-            if (off + 2 >= buf.limit()) return intArrayOf(0, 0, 0)
-            return intArrayOf(buf.get(off).toInt() and 0xFF, buf.get(off + 1).toInt() and 0xFF, buf.get(off + 2).toInt() and 0xFF)
-        }
-        val bg = getRGB(10, h/2) 
-        fun isBg(c: IntArray): Boolean = kotlin.math.abs(c[0] - bg[0]) < 25 && kotlin.math.abs(c[1] - bg[1]) < 25 && kotlin.math.abs(c[2] - bg[2]) < 25
-        var left = 0
-        for (x in 0 until w/2) { if (!isBg(getRGB(x, h/2))) { left = x; break } }
-        var right = w - 1
-        for (x in w-1 downTo w/2) { if (!isBg(getRGB(x, h/2))) { right = x; break } }
-        var top = 0
-        for (y in h/3 downTo 0) { if (!isBg(getRGB(w/2, y))) { top = y; break } }
-        val cellSize = (right - left) / 8f
-        if (cellSize < w * 0.05f) return false
-        config.boardSideMarginRatio = left / w.toFloat()
-        config.boardTopRatio = top / h.toFloat()
+        // Отключено, так как мы задали точные значения вручную
         return true
     }
     fun analyzeImage(image: Image): RecognizedFrame? {
@@ -45,13 +26,11 @@ class VisionRecognizer(private val config: BotConfig) {
             if (isBlock(buf, cx, cy, w, h, rStride, pStride)) boardMask = boardMask or (1UL shl (r * 8 + c))
         }
         
-        // Лоток всегда находится под полем. Берем низ поля и отступаем 1.2 клетки вниз.
         val bBottom = bTop + (8f * cellSize)
-        val trayY = bBottom + (cellSize * 1.2f)
-        val trayCell = cellSize * 0.6f
+        val trayY = bBottom + (cellSize * 1.5f)
+        val trayCell = cellSize * 0.85f // Фигуры в игре чуть меньше клеток на доске
         val pieces = mutableListOf<Piece>()
         
-        // Ищем фигуры в трех колонках (слева, центр, справа), отталкиваясь от краев поля, а не экрана
         val slotXs = listOf(bLeft + cellSize * 1.5f, bLeft + cellSize * 4f, bLeft + cellSize * 6.5f)
         
         for ((idx, sx) in slotXs.withIndex()) {

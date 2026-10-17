@@ -13,6 +13,8 @@ import androidx.appcompat.app.AppCompatActivity
 import com.example.blockblastbot.capture.ScreenCaptureService
 import com.example.blockblastbot.databinding.ActivityMainBinding
 import com.example.blockblastbot.input.TouchService
+import com.example.blockblastbot.core.BotConfig
+import com.example.blockblastbot.core.BotStrategy
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private val notifPermLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
@@ -36,54 +38,55 @@ class MainActivity : AppCompatActivity() {
                 notifPermLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
             }
         }
-        binding.btnAccessibility.setOnClickListener {
-            startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
-        }
+        val cfg = BotConfig(this)
+        binding.sbDelay.progress = cfg.moveDelayMs.toInt()
+        binding.tvDelayLabel.text = "Задержка: ${cfg.moveDelayMs} мс"
+        binding.sbDragOffset.progress = cfg.dragOffsetY.toInt()
+        binding.tvOffsetLabel.text = "Сдвиг пальца: ${cfg.dragOffsetY.toInt()} px"
+        binding.sbBoardTop.progress = (cfg.boardTopRatio * 100).toInt()
+        binding.tvBoardTopLabel.text = "Верхняя граница поля: ${(cfg.boardTopRatio * 100).toInt()}%"
+        
+        binding.btnAccessibility.setOnClickListener { startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) }
         binding.btnOverlay.setOnClickListener {
-            if (!Settings.canDrawOverlays(this)) {
-                startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:" + packageName)))
-            } else {
-                Toast.makeText(this, "Разрешение уже выдано", Toast.LENGTH_SHORT).show()
-            }
+            if (!Settings.canDrawOverlays(this)) startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:" + packageName)))
+            else Toast.makeText(this, "Разрешение уже выдано", Toast.LENGTH_SHORT).show()
         }
         binding.btnStartService.setOnClickListener {
             if (TouchService.instance == null) {
                 Toast.makeText(this, "Включите TouchService (Шаг 1)", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
-            val mpm = getSystemService(MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
-            projLauncher.launch(mpm.createScreenCaptureIntent())
+            projLauncher.launch((getSystemService(MEDIA_PROJECTION_SERVICE) as MediaProjectionManager).createScreenCaptureIntent())
         }
         binding.sbDelay.setOnSeekBarChangeListener(object : android.widget.SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(sb: android.widget.SeekBar?, p: Int, u: Boolean) {
-                binding.tvDelayLabel.text = "Задержка между ходами: " + p + " мс"
-                com.example.blockblastbot.core.BotConfig(this@MainActivity).moveDelayMs = p.toLong()
+                binding.tvDelayLabel.text = "Задержка: $p мс"
+                cfg.moveDelayMs = p.toLong()
             }
             override fun onStartTrackingTouch(sb: android.widget.SeekBar?) {}
             override fun onStopTrackingTouch(sb: android.widget.SeekBar?) {}
         })
         binding.sbDragOffset.setOnSeekBarChangeListener(object : android.widget.SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(sb: android.widget.SeekBar?, p: Int, u: Boolean) {
-                binding.tvOffsetLabel.text = "Компенсация сдвига пальца: " + p + " px"
-                com.example.blockblastbot.core.BotConfig(this@MainActivity).dragOffsetY = p.toFloat()
+                binding.tvOffsetLabel.text = "Сдвиг пальца: $p px"
+                cfg.dragOffsetY = p.toFloat()
             }
             override fun onStartTrackingTouch(sb: android.widget.SeekBar?) {}
             override fun onStopTrackingTouch(sb: android.widget.SeekBar?) {}
         })
         binding.sbBoardTop.setOnSeekBarChangeListener(object : android.widget.SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(sb: android.widget.SeekBar?, p: Int, u: Boolean) {
-                binding.tvBoardTopLabel.text = "Верхняя граница поля: " + p + "%"
-                com.example.blockblastbot.core.BotConfig(this@MainActivity).boardTopRatio = p / 100f
+                binding.tvBoardTopLabel.text = "Верхняя граница поля: $p%"
+                cfg.boardTopRatio = p / 100f
             }
             override fun onStartTrackingTouch(sb: android.widget.SeekBar?) {}
             override fun onStopTrackingTouch(sb: android.widget.SeekBar?) {}
         })
         binding.rgStrategy.setOnCheckedChangeListener { _, checkedId ->
-            val cfg = com.example.blockblastbot.core.BotConfig(this)
             cfg.strategy = when (checkedId) {
-                R.id.rbSafe -> com.example.blockblastbot.core.BotStrategy.SAFE
-                R.id.rbClear -> com.example.blockblastbot.core.BotStrategy.CLEAR_FIELD
-                else -> com.example.blockblastbot.core.BotStrategy.BALANCED
+                R.id.rbSafe -> BotStrategy.SAFE
+                R.id.rbClear -> BotStrategy.CLEAR_FIELD
+                else -> BotStrategy.BALANCED
             }
         }
     }
