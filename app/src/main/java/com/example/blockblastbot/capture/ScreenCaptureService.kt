@@ -52,6 +52,14 @@ class ScreenCaptureService : Service() {
             startForeground(NOTIF_ID, notification)
         }
         mp = (getSystemService(MEDIA_PROJECTION_SERVICE) as MediaProjectionManager).getMediaProjection(code, data)
+        
+        // ИСПРАВЛЕНИЕ ДЛЯ ANDROID 14+: Регистрируем коллбэк
+        mp?.registerCallback(object : MediaProjection.Callback() {
+            override fun onStop() {
+                stopSelf()
+            }
+        }, Handler(Looper.getMainLooper()))
+        
         val m = resources.displayMetrics
         reader = ImageReader.newInstance(m.widthPixels, m.heightPixels, PixelFormat.RGBA_8888, 2)
         mp?.createVirtualDisplay("V", m.widthPixels, m.heightPixels, m.densityDpi, DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR, reader?.surface, null, null)
