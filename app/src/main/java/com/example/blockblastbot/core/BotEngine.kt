@@ -54,6 +54,7 @@ class BotEngine(private val config: BotConfig, private val readerProvider: () ->
             if (rec == null || rec.pieces.isEmpty()) { _status.value = "Ищу фигуры..."; delay(300L); continue }
             val sol = BitboardSolver.findBestSequence(rec.board, rec.pieces, config.strategy)
             if (sol == null || sol.moves.isEmpty()) { _status.value = "Нет решений"; pause(); break }
+            
             val m = sol.moves.first()
             val target = PointF(
                 rec.boardLeft + (m.targetCol + m.piece.grabOffsetCol + 0.5f) * rec.cellSize,
@@ -61,7 +62,9 @@ class BotEngine(private val config: BotConfig, private val readerProvider: () ->
             )
             _status.value = "Делаю ход..."
             ts.performPieceDrag(m.piece.trayOriginScreen, target)
-            delay(1500L)
+            
+            // УВЕЛИЧИЛИ ПАУЗУ ДО 2 СЕКУНД, чтобы игра успела прогрузить анимацию
+            delay(2000L) 
         }
     }
 }

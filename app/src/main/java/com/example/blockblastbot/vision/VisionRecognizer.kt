@@ -23,14 +23,11 @@ class VisionRecognizer(private val config: BotConfig) {
             if (isBlock(buf, cx, cy, w, h, rStride, pStride)) boardMask = boardMask or (1UL shl (r * 8 + c))
         }
         val pieces = mutableListOf<Piece>()
-        
-        // Опускаем Y вниз (2 клетки от низа доски) и раздвигаем X (1.5, 4.2, 6.9)
         val trayY = bTop + (8f * cellSize) + (cellSize * 2.0f)
         val slotXs = listOf(bLeft + cellSize * 1.5f, bLeft + cellSize * 4.2f, bLeft + cellSize * 6.9f)
         
         for ((idx, sx) in slotXs.withIndex()) {
             val raw = mutableListOf<Pair<Int, Int>>()
-            // Сканируем область 5x5 вокруг центра слота
             for (dr in -2..2) for (dc in -2..2) {
                 val px = (sx + dc * cellSize).toInt()
                 val py = (trayY + dr * cellSize).toInt()
@@ -52,6 +49,7 @@ class VisionRecognizer(private val config: BotConfig) {
         if (off + 2 >= buf.limit()) return false
         val hsv = FloatArray(3)
         Color.RGBToHSV(buf.get(off).toInt() and 0xFF, buf.get(off+1).toInt() and 0xFF, buf.get(off+2).toInt() and 0xFF, hsv)
-        return hsv[2] > 0.70f && hsv[1] > 0.40f
+        // СНИЗИЛИ ПОРОГ ЯРКОСТИ (V), чтобы видеть темно-синие блоки
+        return hsv[2] > 0.45f && hsv[1] > 0.40f
     }
 }
