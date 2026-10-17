@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="wrap_content" android:layout_height="wrap_content" android:background="#CC1E1E1E" android:orientation="horizontal" android:padding="6dp">
-    <Button android:id="@+id/btnOverlayAuto" android:layout_width="wrap_content" android:layout_height="38dp" android:backgroundTint="#1976D2" android:text="АВТО" android:textColor="#FFFFFF" android:textSize="12sp" />
-    <Button android:id="@+id/btnOverlayDebug" android:layout_width="wrap_content" android:layout_height="38dp" android:layout_marginStart="6dp" android:backgroundTint="#FF9800" android:text="DEBUG" android:textColor="#FFFFFF" android:textSize="12sp" />
+    <Button android:id="@+id/btnGrid" android:layout_width="wrap_content" android:layout_height="38dp" android:backgroundTint="#FF9800" android:text="СЕТКА" android:textColor="#FFFFFF" android:textSize="12sp" />
+    <Button android:id="@+id/btnUp" android:layout_width="wrap_content" android:layout_height="38dp" android:layout_marginStart="4dp" android:text="↑" android:textSize="18sp" />
+    <Button android:id="@+id/btnDown" android:layout_width="wrap_content" android:layout_height="38dp" android:layout_marginStart="4dp" android:text="↓" android:textSize="18sp" />
+    <Button android:id="@+id/btnLeft" android:layout_width="wrap_content" android:layout_height="38dp" android:layout_marginStart="4dp" android:text="←" android:textSize="18sp" />
+    <Button android:id="@+id/btnRight" android:layout_width="wrap_content" android:layout_height="38dp" android:layout_marginStart="4dp" android:text="→" android:textSize="18sp" />
     <Button android:id="@+id/btnOverlayToggle" android:layout_width="wrap_content" android:layout_height="38dp" android:layout_marginStart="6dp" android:backgroundTint="#2E7D32" android:text="СТАРТ" android:textColor="#FFFFFF" android:textSize="12sp" />
-    <Button android:id="@+id/btnOverlayStop" android:layout_width="wrap_content" android:layout_height="38dp" android:layout_marginStart="6dp" android:backgroundTint="#C62828" android:text="СТОП" android:textColor="#FFFFFF" android:textSize="12sp" />
-    <TextView android:id="@+id/tvOverlayInfo" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="center_vertical" android:layout_marginStart="8dp" android:layout_marginEnd="6dp" android:text="Готов" android:textColor="#FFFFFF" android:textSize="12sp" />
+    <Button android:id="@+id/btnOverlayStop" android:layout_width="wrap_content" android:layout_height="38dp" android:layout_marginStart="4dp" android:backgroundTint="#C62828" android:text="СТОП" android:textColor="#FFFFFF" android:textSize="12sp" />
 </LinearLayout>
