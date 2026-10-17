@@ -41,11 +41,8 @@ class MainActivity : AppCompatActivity() {
         val cfg = BotConfig(this)
         binding.sbDelay.progress = cfg.moveDelayMs.toInt()
         binding.tvDelayLabel.text = "Задержка: ${cfg.moveDelayMs} мс"
-        binding.sbDragOffset.progress = cfg.dragOffsetY.toInt()
-        binding.tvOffsetLabel.text = "Сдвиг пальца: ${cfg.dragOffsetY.toInt()} px"
         binding.sbBoardTop.progress = (cfg.boardTopRatio * 100).toInt()
         binding.tvBoardTopLabel.text = "Верхняя граница поля: ${(cfg.boardTopRatio * 100).toInt()}%"
-        
         binding.btnAccessibility.setOnClickListener { startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) }
         binding.btnOverlay.setOnClickListener {
             if (!Settings.canDrawOverlays(this)) startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:" + packageName)))
@@ -62,14 +59,6 @@ class MainActivity : AppCompatActivity() {
             override fun onProgressChanged(sb: android.widget.SeekBar?, p: Int, u: Boolean) {
                 binding.tvDelayLabel.text = "Задержка: $p мс"
                 cfg.moveDelayMs = p.toLong()
-            }
-            override fun onStartTrackingTouch(sb: android.widget.SeekBar?) {}
-            override fun onStopTrackingTouch(sb: android.widget.SeekBar?) {}
-        })
-        binding.sbDragOffset.setOnSeekBarChangeListener(object : android.widget.SeekBar.OnSeekBarChangeListener {
-            override fun onProgressChanged(sb: android.widget.SeekBar?, p: Int, u: Boolean) {
-                binding.tvOffsetLabel.text = "Сдвиг пальца: $p px"
-                cfg.dragOffsetY = p.toFloat()
             }
             override fun onStartTrackingTouch(sb: android.widget.SeekBar?) {}
             override fun onStopTrackingTouch(sb: android.widget.SeekBar?) {}

@@ -9,7 +9,6 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-
 class BotEngine(private val config: BotConfig, private val readerProvider: () -> ImageReader?) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val recognizer = VisionRecognizer(config)
@@ -20,11 +19,9 @@ class BotEngine(private val config: BotConfig, private val readerProvider: () ->
     val isRunning: Boolean get() = job?.isActive == true
     
     fun getLastFrame() = lastFrame
-    
     fun shift(dx: Float, dy: Float) {
         config.offsetX += dx
         config.offsetY += dy
-        // Принудительно обновляем кадр
         scope.launch {
             imageMutex.withLock {
                 val reader = readerProvider() ?: return@withLock
@@ -33,7 +30,6 @@ class BotEngine(private val config: BotConfig, private val readerProvider: () ->
             }
         }
     }
-
     fun start() {
         if (job?.isActive == true) return
         job = scope.launch {
@@ -50,18 +46,14 @@ class BotEngine(private val config: BotConfig, private val readerProvider: () ->
         while (currentCoroutineContext().isActive) {
             val ts = TouchService.instance
             if (ts == null) { _status.value = "Нет TouchService!"; delay(1000L); continue }
-            
             val rec = imageMutex.withLock {
                 val reader = readerProvider() ?: return@withLock null
                 val img = reader.acquireLatestImage() ?: return@withLock null
                 try { recognizer.analyzeImage(img).also { lastFrame = it } } finally { img.close() }
             }
-            
             if (rec == null || rec.pieces.isEmpty()) { _status.value = "Ищу фигуры..."; delay(300L); continue }
-            
             val sol = BitboardSolver.findBestSequence(rec.board, rec.pieces, config.strategy)
             if (sol == null || sol.moves.isEmpty()) { _status.value = "Нет решений"; pause(); break }
-            
             val m = sol.moves.first()
             val target = PointF(
                 rec.boardLeft + (m.targetCol + m.piece.grabOffsetCol + 0.5f) * rec.cellSize,

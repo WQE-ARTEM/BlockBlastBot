@@ -71,22 +71,15 @@ class ScreenCaptureService : Service() {
                 gridView?.invalidate()
             }
         }
-
         view.findViewById<Button>(R.id.btnGrid).setOnClickListener {
-            if (gridView?.visibility == View.GONE) {
-                gridView?.visibility = View.VISIBLE; updateGrid()
-            } else gridView?.visibility = View.GONE
+            if (gridView?.visibility == View.GONE) { gridView?.visibility = View.VISIBLE; updateGrid() }
+            else gridView?.visibility = View.GONE
         }
-        
-        // Кнопки настройки (двигаем на 5 пикселей)
-        view.findViewById<Button>(R.id.btnUp).setOnClickListener { engine.shift(0f, -5f); updateGrid() }
-        view.findViewById<Button>(R.id.btnDown).setOnClickListener { engine.shift(0f, 5f); updateGrid() }
-        view.findViewById<Button>(R.id.btnLeft).setOnClickListener { engine.shift(-5f, 0f); updateGrid() }
-        view.findViewById<Button>(R.id.btnRight).setOnClickListener { engine.shift(5f, 0f); updateGrid() }
-
-        view.findViewById<Button>(R.id.btnOverlayToggle).setOnClickListener {
-            if (engine.isRunning) { engine.pause() } else { engine.start() }
-        }
+        view.findViewById<Button>(R.id.btnUp).setOnClickListener { engine.shift(0f, -5f); view.postDelayed({ updateGrid() }, 150) }
+        view.findViewById<Button>(R.id.btnDown).setOnClickListener { engine.shift(0f, 5f); view.postDelayed({ updateGrid() }, 150) }
+        view.findViewById<Button>(R.id.btnLeft).setOnClickListener { engine.shift(-5f, 0f); view.postDelayed({ updateGrid() }, 150) }
+        view.findViewById<Button>(R.id.btnRight).setOnClickListener { engine.shift(5f, 0f); view.postDelayed({ updateGrid() }, 150) }
+        view.findViewById<Button>(R.id.btnOverlayToggle).setOnClickListener { if (engine.isRunning) engine.pause() else engine.start() }
         view.findViewById<Button>(R.id.btnOverlayStop).setOnClickListener { engine.stop(); stopSelf() }
         overlay = view
         wm?.addView(view, lp)

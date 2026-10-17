@@ -8,10 +8,8 @@
         <Button android:id="@+id/btnStartService" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:backgroundTint="#2E7D32" android:text="3. Запустить захват экрана" android:textColor="#FFFFFF" />
         <TextView android:id="@+id/tvDelayLabel" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="16dp" android:text="Задержка между ходами: 650 мс" />
         <SeekBar android:id="@+id/sbDelay" android:layout_width="match_parent" android:layout_height="wrap_content" android:max="1500" android:progress="650" />
-        <TextView android:id="@+id/tvOffsetLabel" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:text="Компенсация сдвига пальца: 200 px" />
-        <SeekBar android:id="@+id/sbDragOffset" android:layout_width="match_parent" android:layout_height="wrap_content" android:max="400" android:progress="200" />
-        <TextView android:id="@+id/tvBoardTopLabel" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:text="Верхняя граница поля: 20%" />
-        <SeekBar android:id="@+id/sbBoardTop" android:layout_width="match_parent" android:layout_height="wrap_content" android:max="40" android:progress="20" />
+        <TextView android:id="@+id/tvBoardTopLabel" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:text="Верхняя граница поля: 22%" />
+        <SeekBar android:id="@+id/sbBoardTop" android:layout_width="match_parent" android:layout_height="wrap_content" android:max="40" android:progress="22" />
         <RadioGroup android:id="@+id/rgStrategy" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp">
             <RadioButton android:id="@+id/rbBalanced" android:layout_width="wrap_content" android:layout_height="wrap_content" android:checked="true" android:text="Максимум очков" />
             <RadioButton android:id="@+id/rbSafe" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Безопасная" />

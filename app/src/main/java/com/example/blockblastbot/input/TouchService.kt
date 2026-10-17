@@ -16,9 +16,9 @@ class TouchService : AccessibilityService() {
     suspend fun performPieceDrag(start: PointF, target: PointF): Boolean = suspendCancellableCoroutine { cont ->
         val path = Path().apply { 
             moveTo(start.x, start.y)
-            lineTo(start.x, start.y) // Зажим (ждем 200мс)
-            lineTo(target.x, target.y) // Тащим (ждем 800мс)
-            lineTo(target.x, target.y) // Отпускаем (ждем 200мс)
+            lineTo(start.x, start.y)
+            lineTo(target.x, target.y)
+            lineTo(target.x, target.y)
         }
         val stroke = GestureDescription.StrokeDescription(path, 0L, 1200L)
         val gesture = GestureDescription.Builder().addStroke(stroke).build()
