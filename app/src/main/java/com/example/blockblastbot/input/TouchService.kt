@@ -12,9 +12,13 @@ class TouchService : AccessibilityService() {
     override fun onAccessibilityEvent(e: AccessibilityEvent?) {}
     override fun onInterrupt() {}
     override fun onDestroy() { instance = null; super.onDestroy() }
-    suspend fun performPieceDrag(start: PointF, target: PointF, offsetY: Float): Boolean = suspendCancellableCoroutine { cont ->
-        val path = Path().apply { moveTo(start.x, start.y); quadTo((start.x + target.x)/2f, (start.y + target.y)/2f, target.x, target.y + offsetY) }
-        val stroke = GestureDescription.StrokeDescription(path, 0L, 320L)
+    
+    suspend fun performPieceDrag(start: PointF, target: PointF): Boolean = suspendCancellableCoroutine { cont ->
+        val path = Path().apply { 
+            moveTo(start.x, start.y); 
+            lineTo(target.x, target.y) // Ведем ровно до цели, без сдвигов
+        }
+        val stroke = GestureDescription.StrokeDescription(path, 0L, 500L) // Увеличили время зажатия
         val gesture = GestureDescription.Builder().addStroke(stroke).build()
         dispatchGesture(gesture, object : GestureResultCallback() {
             override fun onCompleted(g: GestureDescription?) { if (cont.isActive) cont.resume(true) }

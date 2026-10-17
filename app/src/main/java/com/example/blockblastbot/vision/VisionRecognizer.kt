@@ -22,7 +22,8 @@ class VisionRecognizer(private val config: BotConfig) {
             if (isBlock(buf, cx, cy, w, h, rStride, pStride)) boardMask = boardMask or (1UL shl (r * 8 + c))
         }
         
-        val trayY = bTop + (8.9f * cellSize)
+        // Ищем фигуры там, где они реально находятся на твоем экране (примерно 82% высоты)
+        val trayY = h * 0.82f
         val trayCell = cellSize * 0.6f
         val pieces = mutableListOf<Piece>()
         
@@ -49,7 +50,6 @@ class VisionRecognizer(private val config: BotConfig) {
         val blue = buf.get(off + 2).toInt() and 0xFF
         val hsv = FloatArray(3)
         Color.RGBToHSV(red, green, blue, hsv)
-        // УВЕЛИЧИЛИ ЯРКОСТЬ (V) до 0.70, чтобы отсечь темно-синий фон игры
         return hsv[2] > 0.70f && hsv[1] > 0.40f
     }
 }
