@@ -24,6 +24,30 @@ class BotEngine(private val config: BotConfig, private val readerProvider: () ->
             _status.value = if (success) "Автонастройка OK!" else "Ошибка настройки"
         }
     }
+
+    fun getDebugInfo(onResult: (String) -> Unit) {
+        scope.launch {
+            val reader = readerProvider()
+            if (reader == null) { onResult("Нет доступа к экрану"); return@launch }
+            val img = reader.acquireLatestImage()
+            if (img == null) { onResult("Нет кадра"); return@launch }
+            val rec = try { recognizer.analyzeImage(img) } finally { img.close() }
+            if (rec == null) { onResult("Ошибка зрения"); return@launch }
+
+            val sb = StringBuilder()
+            sb.append("Screen: ${img.width}x${img.height}\n")
+            sb.append("BoardLeft: ${rec.boardLeft}\n")
+            sb.append("BoardTop: ${rec.boardTop}\n")
+            sb.append("CellSize: ${rec.cellSize}\n")
+            sb.append("BoardMask: ${rec.board}\n")
+            sb.append("Pieces: ${rec.pieces.size}\n")
+            for (p in rec.pieces) {
+                sb.append("- Slot ${p.slotIndex}: GrabX=${p.trayOriginScreen.x}, GrabY=${p.trayOriginScreen.y}, W=${p.width}, H=${p.height}\n")
+            }
+            onResult(sb.toString())
+        }
+    }
+
     fun start() {
         if (job?.isActive == true) return
         job = scope.launch {
@@ -52,7 +76,6 @@ class BotEngine(private val config: BotConfig, private val readerProvider: () ->
             if (sol == null || sol.moves.isEmpty()) { _status.value = "Нет решений"; pause(); break }
             
             val m = sol.moves.first()
-            // Вычисляем точную позицию для того блока, за который мы схватились
             val target = PointF(
                 rec.boardLeft + (m.targetCol + m.piece.grabOffsetCol + 0.5f) * rec.cellSize,
                 rec.boardTop + (m.targetRow + m.piece.grabOffsetRow + 0.5f) * rec.cellSize + config.dragOffsetY

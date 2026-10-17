@@ -60,11 +60,23 @@ class ScreenCaptureService : Service() {
         }
         val view = LayoutInflater.from(this).inflate(R.layout.overlay_controls, null)
         val btnAuto = view.findViewById<Button>(R.id.btnOverlayAuto)
+        val btnDebug = view.findViewById<Button>(R.id.btnOverlayDebug)
         val btnToggle = view.findViewById<Button>(R.id.btnOverlayToggle)
         val btnStop = view.findViewById<Button>(R.id.btnOverlayStop)
         val tvInfo = view.findViewById<TextView>(R.id.tvOverlayInfo)
         
         btnAuto.setOnClickListener { engine.autoDetect() }
+        
+        btnDebug.setOnClickListener {
+            engine.getDebugInfo { info ->
+                val clipboard = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
+                val clip = ClipData.newPlainText("Bot Debug", info)
+                clipboard.setPrimaryClip(clip)
+                Toast.makeText(this, "Скопировано в буфер!", Toast.LENGTH_SHORT).show()
+                tvInfo.text = "Скопировано!"
+            }
+        }
+
         btnToggle.setOnClickListener {
             if (engine.isRunning) { engine.pause(); btnToggle.text = "СТАРТ" }
             else { engine.start(); btnToggle.text = "ПАУЗА" }
