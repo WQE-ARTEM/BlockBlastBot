@@ -21,10 +21,13 @@ class VisionRecognizer(private val config: BotConfig) {
             val cy = (bTop + (r + 0.5f) * cellSize).toInt()
             if (isBlock(buf, cx, cy, w, h, rStride, pStride)) boardMask = boardMask or (1UL shl (r * 8 + c))
         }
-        val trayCell = cellSize * 0.52f
-        val trayY = h * config.trayCenterYRatio
+        
+        // ДИНАМИЧЕСКИЙ РАСЧЕТ ПОЛОЖЕНИЯ ЛОТКА (под полем)
+        val trayY = bTop + (8.9f * cellSize)
+        val trayCell = cellSize * 0.6f
         val pieces = mutableListOf<Piece>()
-        for ((idx, sx) in listOf(w * 0.21f, w * 0.50f, w * 0.79f).withIndex()) {
+        
+        for ((idx, sx) in listOf(w * 0.18f, w * 0.50f, w * 0.82f).withIndex()) {
             val raw = mutableListOf<Pair<Int, Int>>()
             for (dr in -2..2) for (dc in -2..2) {
                 val px = (sx + dc * trayCell).toInt(); val py = (trayY + dr * trayCell).toInt()

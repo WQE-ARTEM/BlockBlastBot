@@ -29,14 +29,21 @@ class BotEngine(private val config: BotConfig, private val readerProvider: () ->
             val ts = TouchService.instance
             if (ts == null) { _status.value = "Включите TouchService!"; delay(1000L); continue }
             val reader = readerProvider()
-            if (reader == null) { delay(200L); continue }
+            if (reader == null) { _status.value = "Нет доступа к экрану"; delay(200L); continue }
             val img = reader.acquireLatestImage()
             if (img == null) { delay(200L); continue }
             val rec = try { recognizer.analyzeImage(img) } finally { img.close() }
-            if (rec == null || rec.pieces.isEmpty()) { delay(300L); continue }
-            _status.value = "Ход..."
+            if (rec == null || rec.pieces.isEmpty()) { 
+                _status.value = "Ищу фигуры (пусто)"; 
+                delay(300L); continue 
+            }
+            _status.value = "Фигур: ${rec.pieces.size}, думаю..."
             val sol = BitboardSolver.findBestSequence(rec.board, rec.pieces, config.strategy)
-            if (sol == null || sol.moves.isEmpty()) { _status.value = "Нет решений"; pause(); break }
+            if (sol == null || sol.moves.isEmpty()) { 
+                _status.value = "Нет решений! (фигур: ${rec.pieces.size})"; 
+                pause(); break 
+            }
+            _status.value = "Делаю ход..."
             val m = sol.moves.first()
             val target = PointF(
                 rec.boardLeft + (m.targetCol + m.piece.width / 2f) * rec.cellSize,
