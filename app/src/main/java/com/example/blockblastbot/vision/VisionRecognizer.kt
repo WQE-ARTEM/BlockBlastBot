@@ -22,7 +22,6 @@ class VisionRecognizer(private val config: BotConfig) {
             if (isBlock(buf, cx, cy, w, h, rStride, pStride)) boardMask = boardMask or (1UL shl (r * 8 + c))
         }
         
-        // ДИНАМИЧЕСКИЙ РАСЧЕТ ПОЛОЖЕНИЯ ЛОТКА (под полем)
         val trayY = bTop + (8.9f * cellSize)
         val trayCell = cellSize * 0.6f
         val pieces = mutableListOf<Piece>()
@@ -50,6 +49,7 @@ class VisionRecognizer(private val config: BotConfig) {
         val blue = buf.get(off + 2).toInt() and 0xFF
         val hsv = FloatArray(3)
         Color.RGBToHSV(red, green, blue, hsv)
-        return hsv[2] > 0.46f && hsv[1] > 0.32f
+        // УВЕЛИЧИЛИ ЯРКОСТЬ (V) до 0.70, чтобы отсечь темно-синий фон игры
+        return hsv[2] > 0.70f && hsv[1] > 0.40f
     }
 }

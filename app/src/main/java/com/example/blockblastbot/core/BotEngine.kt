@@ -27,20 +27,26 @@ class BotEngine(private val config: BotConfig, private val readerProvider: () ->
     private suspend fun runLoop() {
         while (currentCoroutineContext().isActive) {
             val ts = TouchService.instance
-            if (ts == null) { _status.value = "Включите TouchService!"; delay(1000L); continue }
+            if (ts == null) { _status.value = "Нет TouchService!"; delay(1000L); continue }
             val reader = readerProvider()
             if (reader == null) { _status.value = "Нет доступа к экрану"; delay(200L); continue }
             val img = reader.acquireLatestImage()
             if (img == null) { delay(200L); continue }
             val rec = try { recognizer.analyzeImage(img) } finally { img.close() }
-            if (rec == null || rec.pieces.isEmpty()) { 
-                _status.value = "Ищу фигуры (пусто)"; 
+            
+            if (rec == null) {
+                _status.value = "Ошибка зрения"
+                delay(300L); continue
+            }
+            if (rec.pieces.isEmpty()) { 
+                _status.value = "Фигур не видно (0)" 
                 delay(300L); continue 
             }
-            _status.value = "Фигур: ${rec.pieces.size}, думаю..."
+            
+            _status.value = "Фигур: ${rec.pieces.size}. Думаю..."
             val sol = BitboardSolver.findBestSequence(rec.board, rec.pieces, config.strategy)
             if (sol == null || sol.moves.isEmpty()) { 
-                _status.value = "Нет решений! (фигур: ${rec.pieces.size})"; 
+                _status.value = "Нет решений (фигур: ${rec.pieces.size})"; 
                 pause(); break 
             }
             _status.value = "Делаю ход..."
