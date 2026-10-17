@@ -15,10 +15,14 @@ class TouchService : AccessibilityService() {
     
     suspend fun performPieceDrag(start: PointF, target: PointF): Boolean = suspendCancellableCoroutine { cont ->
         val path = Path().apply { 
-            moveTo(start.x, start.y); 
-            lineTo(target.x, target.y) // Ведем ровно до цели, без сдвигов
+            moveTo(start.x, start.y)
+            // Тащим плавно
+            lineTo(target.x, target.y)
+            // Делаем микро-сдвиг на 2 пикселя, чтобы игра поняла, что палец "завис" перед отпусканием
+            lineTo(target.x + 2f, target.y + 2f) 
         }
-        val stroke = GestureDescription.StrokeDescription(path, 0L, 500L) // Увеличили время зажатия
+        // Увеличили время до 800мс для надежности
+        val stroke = GestureDescription.StrokeDescription(path, 0L, 800L)
         val gesture = GestureDescription.Builder().addStroke(stroke).build()
         dispatchGesture(gesture, object : GestureResultCallback() {
             override fun onCompleted(g: GestureDescription?) { if (cont.isActive) cont.resume(true) }

@@ -1,7 +1,15 @@
 package com.example.blockblastbot.solver
 import android.graphics.PointF
 import com.example.blockblastbot.core.BotStrategy
-data class Piece(val slotIndex: Int, val cells: List<Pair<Int, Int>>, val trayOriginScreen: PointF, val height: Int = (cells.maxOfOrNull { it.first } ?: 0) + 1, val width: Int = (cells.maxOfOrNull { it.second } ?: 0) + 1)
+data class Piece(
+    val slotIndex: Int, 
+    val cells: List<Pair<Int, Int>>, 
+    val trayOriginScreen: PointF, 
+    val grabOffsetRow: Int,
+    val grabOffsetCol: Int,
+    val height: Int = (cells.maxOfOrNull { it.first } ?: 0) + 1, 
+    val width: Int = (cells.maxOfOrNull { it.second } ?: 0) + 1
+)
 data class Move(val piece: Piece, val targetRow: Int, val targetCol: Int)
 data class Solution(val moves: List<Move>, val score: Double)
 object BitboardSolver {
