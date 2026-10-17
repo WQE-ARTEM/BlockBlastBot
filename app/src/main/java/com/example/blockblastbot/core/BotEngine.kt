@@ -16,14 +16,18 @@ class BotEngine(private val config: BotConfig, private val readerProvider: () ->
     fun autoDetect() {
         scope.launch {
             _status.value = "Сканирую экран..."
-            val reader = readerProvider() ?: return@launch
-            val img = reader.acquireLatestImage() ?: return@launch
-            val success = try { recognizer.autoDetect(img) } finally { img.close() }
-            if (success) {
-                _status.value = "Автонастройка OK!"
-            } else {
-                _status.value = "Ошибка настройки"
+            val reader = readerProvider()
+            if (reader == null) {
+                _status.value = "Нет доступа к экрану"
+                return@launch
             }
+            val img = reader.acquireLatestImage()
+            if (img == null) {
+                _status.value = "Не удалось получить кадр"
+                return@launch
+            }
+            val success = try { recognizer.autoDetect(img) } finally { img.close() }
+            _status.value = if (success) "Автонастройка OK!" else "Ошибка настройки"
         }
     }
 
@@ -38,23 +42,48 @@ class BotEngine(private val config: BotConfig, private val readerProvider: () ->
     fun pause() { job?.cancel(); job = null; _status.value = "Пауза" }
     fun stop() { job?.cancel(); job = null; _status.value = "Стоп" }
     fun destroy() { stop(); scope.cancel() }
+    
     private suspend fun runLoop() {
         while (currentCoroutineContext().isActive) {
-            val ts = TouchService.instance ?: run { _status.value = "Нет TouchService!"; delay(1000L); return@run }
-            val reader = readerProvider() ?: run { delay(200L); return@run }
-            val img = reader.acquireLatestImage() ?: run { delay(200L); return@run }
+            val ts = TouchService.instance
+            if (ts == null) {
+                _status.value = "Нет TouchService!"
+                delay(1000L)
+                continue
+            }
+            val reader = readerProvider()
+            if (reader == null) {
+                delay(200L)
+                continue
+            }
+            val img = reader.acquireLatestImage()
+            if (img == null) {
+                delay(200L)
+                continue
+            }
             val rec = try { recognizer.analyzeImage(img) } finally { img.close() }
             
-            if (rec == null || rec.pieces.isEmpty()) { _status.value = "Ищу фигуры..."; delay(300L); continue }
+            if (rec == null || rec.pieces.isEmpty()) {
+                _status.value = "Ищу фигуры..."
+                delay(300L)
+                continue
+            }
             
             val sol = BitboardSolver.findBestSequence(rec.board, rec.pieces, config.strategy)
-            if (sol == null || sol.moves.isEmpty()) { _status.value = "Нет решений"; pause(); break }
+            if (sol == null || sol.moves.isEmpty()) {
+                _status.value = "Нет решений"
+                pause()
+                break
+            }
             
             val m = sol.moves.first()
-            val target = PointF(rec.boardLeft + (m.targetCol + m.piece.width / 2f) * rec.cellSize, rec.boardTop + (m.targetRow + m.piece.height / 2f) * rec.cellSize)
+            val target = PointF(
+                rec.boardLeft + (m.targetCol + m.piece.width / 2f) * rec.cellSize,
+                rec.boardTop + (m.targetRow + m.piece.height / 2f) * rec.cellSize
+            )
             _status.value = "Делаю ход..."
             ts.performPieceDrag(m.piece.trayOriginScreen, target)
-            delay(1200L) 
+            delay(1200L)
         }
     }
 }
