@@ -1,3 +1,6 @@
+import java.util.Properties
+import java.io.FileInputStream
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -11,8 +14,14 @@ android {
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
+
+        val prop = Properties()
+        val localProps = rootProject.file("local.properties")
+        if (localProps.exists()) { prop.load(FileInputStream(localProps)) }
+        val apiKey = prop.getProperty("GEMINI_API_KEY") ?: ""
+        buildConfigField("String", "GEMINI_API_KEY", "\"$apiKey\"")
     }
-    buildFeatures { viewBinding = true }
+    buildFeatures { viewBinding = true; buildConfig = true }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17

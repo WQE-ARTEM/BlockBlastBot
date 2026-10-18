@@ -1,6 +1,7 @@
 package com.example.blockblastbot.core
 import android.graphics.Bitmap
 import android.util.Base64
+import com.example.blockblastbot.BuildConfig
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
@@ -14,7 +15,6 @@ import java.util.concurrent.TimeUnit
 data class AiMove(val grabX: Float, val grabY: Float, val dropX: Float, val dropY: Float)
 
 class GeminiAi {
-    // ТВОЙ КЛЮЧ
     private val apiKey = BuildConfig.GEMINI_API_KEY 
     
     private val client = OkHttpClient.Builder()
