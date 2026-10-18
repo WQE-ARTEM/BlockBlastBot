@@ -56,7 +56,7 @@ class GeminiAi {
                 }))
             }
 
-            val url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=$apiKey"
+            val url = "https://gemini-proxy.89193240154art.workers.dev/v1beta/models/gemini-2.5-flash:generateContent?key=$apiKey"
             val request = Request.Builder()
                 .url(url)
                 .post(json.toString().toRequestBody("application/json".toMediaType()))
