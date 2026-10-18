@@ -16,9 +16,8 @@ data class AiMove(val grabX: Float, val grabY: Float, val dropX: Float, val drop
 
 class GeminiAi {
     private val apiKey = BuildConfig.GEMINI_API_KEY.trim() 
-    
     private val client = OkHttpClient.Builder()
-        .connectTimeout(15, TimeUnit.SECONDS) // Уменьшили до 15 секунд
+        .connectTimeout(15, TimeUnit.SECONDS)
         .readTimeout(15, TimeUnit.SECONDS)
         .build()
 
@@ -46,20 +45,12 @@ class GeminiAi {
                 }))
             }
 
-            // Ключ в URL, как в браузере
             val url = "https://gemini-proxy.89193240154art.workers.dev/v1beta/models/gemini-2.5-flash:generateContent?key=$apiKey"
-            
-            val request = Request.Builder()
-                .url(url)
-                .post(json.toString().toRequestBody("application/json".toMediaType()))
-                .build()
-
+            val request = Request.Builder().url(url).post(json.toString().toRequestBody("application/json".toMediaType())).build()
             val response = client.newCall(request).execute()
             val responseBody = response.body?.string() ?: return@withContext Result.failure(Exception("Пустой ответ"))
             
-            if (!response.isSuccessful) {
-                return@withContext Result.failure(Exception("HTTP ${response.code}"))
-            }
+            if (!response.isSuccessful) return@withContext Result.failure(Exception("HTTP ${response.code}"))
 
             val jsonResponse = JSONObject(responseBody)
             val text = jsonResponse.getJSONArray("candidates").getJSONObject(0)
@@ -67,10 +58,9 @@ class GeminiAi {
             
             val startIdx = text.indexOf("{")
             val endIdx = text.lastIndexOf("}")
-            if (startIdx == -1 || endIdx == -1) return@withContext Result.failure(Exception("Нет JSON от ИИ"))
+            if (startIdx == -1 || endIdx == -1) return@withContext Result.failure(Exception("Нет JSON"))
             
             val moveJson = JSONObject(text.substring(startIdx, endIdx + 1))
-
             Result.success(AiMove(
                 moveJson.getDouble("grabX").toFloat(),
                 moveJson.getDouble("grabY").toFloat(),

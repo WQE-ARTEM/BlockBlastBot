@@ -36,7 +36,6 @@ class BotEngine(private val readerProvider: () -> ImageReader?) {
                 val ts = TouchService.instance
                 if (ts == null) { _status.value = "Нет TouchService"; delay(1000L); continue }
                 
-                _status.value = "Захват..."
                 val reader = readerProvider() ?: run { delay(500L); continue }
                 val img = reader.acquireLatestImage() ?: run { delay(500L); continue }
                 
@@ -51,23 +50,18 @@ class BotEngine(private val readerProvider: () -> ImageReader?) {
                 val result = ai.analyzeBoard(bitmap)
                 
                 if (result.isFailure) {
-                    _status.value = "Ошибка ИИ: ${result.exceptionOrNull()?.message}"
+                    _status.value = "Ошибка: ${result.exceptionOrNull()?.message}"
                     delay(5000L)
                     continue
                 }
                 
                 val move = result.getOrNull()!!
-                _status.value = "ИИ ответил! Ставлю..."
+                _status.value = "Ставлю..."
                 
-                val scaleFactor = 2f
-                ts.performPieceDrag(
-                    PointF(move.grabX * scaleFactor, move.grabY * scaleFactor), 
-                    PointF(move.dropX * scaleFactor, move.dropY * scaleFactor)
-                )
-                
+                ts.performPieceDrag(PointF(move.grabX * 2f, move.grabY * 2f), PointF(move.dropX * 2f, move.dropY * 2f))
                 delay(3000L) 
             } catch (e: Exception) {
-                _status.value = "Ошибка цикла: ${e.message?.take(30)}"
+                _status.value = "Цикл: ${e.message?.take(20)}"
                 delay(3000L)
             }
         }
