@@ -15,7 +15,7 @@ class BotEngine(private val readerProvider: () -> ImageReader?) {
     private val ai = GeminiAi()
     private var job: Job? = null
     private val imageMutex = Mutex()
-    private val _status = MutableStateFlow("ИИ Готов"); val statusFlow: StateFlow<String> = _status
+    private val _status = MutableStateFlow("Готов"); val statusFlow: StateFlow<String> = _status
     val isRunning: Boolean get() = job?.isActive == true
 
     fun start() {

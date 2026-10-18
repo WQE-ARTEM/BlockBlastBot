@@ -63,7 +63,7 @@ class ScreenCaptureService : Service() {
         val tvInfo = view.findViewById<TextView>(R.id.tvOverlayInfo)
         
         btnToggle.setOnClickListener {
-            if (engine.isRunning) { engine.pause(); btnToggle.text = "СТАРТ ИИ" }
+            if (engine.isRunning) { engine.pause(); btnToggle.text = "СТАРТ" }
             else { engine.start(); btnToggle.text = "ПАУЗА" }
         }
         btnStop.setOnClickListener { engine.stop(); stopSelf() }

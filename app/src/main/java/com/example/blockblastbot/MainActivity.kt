@@ -24,7 +24,7 @@ class MainActivity : AppCompatActivity() {
                 putExtra("data", res.data)
             }
             startForegroundService(i)
-            Toast.makeText(this, "Сервис запущен! Зайди в игру.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Запущено! Зайди в игру.", Toast.LENGTH_SHORT).show()
         }
     }
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -39,7 +39,7 @@ class MainActivity : AppCompatActivity() {
         binding.btnAccessibility.setOnClickListener { startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) }
         binding.btnOverlay.setOnClickListener {
             if (!Settings.canDrawOverlays(this)) startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:" + packageName)))
-            else Toast.makeText(this, "Разрешение уже выдано", Toast.LENGTH_SHORT).show()
+            else Toast.makeText(this, "Разрешение выдано", Toast.LENGTH_SHORT).show()
         }
         binding.btnStartService.setOnClickListener {
             if (TouchService.instance == null) {
