@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:padding="16dp" android:gravity="center_horizontal">
+    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="AI Бот (Gemini 1.5)" android:textSize="24sp" android:textStyle="bold" android:layout_marginBottom="24dp"/>
+    <Button android:id="@+id/btnAccessibility" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="1. Включить службу доступности" />
+    <Button android:id="@+id/btnOverlay" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:text="2. Разрешить оверлей" />
+    <Button android:id="@+id/btnStartService" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="24dp" android:backgroundTint="#2E7D32" android:text="3. Запустить захват экрана" android:textColor="#FFFFFF" />
+</LinearLayout>
