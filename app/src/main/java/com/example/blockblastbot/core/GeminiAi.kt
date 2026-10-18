@@ -15,33 +15,23 @@ import java.util.concurrent.TimeUnit
 data class AiMove(val grabX: Float, val grabY: Float, val dropX: Float, val dropY: Float)
 
 class GeminiAi {
-    private val apiKey = BuildConfig.GEMINI_API_KEY 
+    private val apiKey = BuildConfig.GEMINI_API_KEY.trim() 
     
     private val client = OkHttpClient.Builder()
-        .connectTimeout(30, TimeUnit.SECONDS)
-        .readTimeout(30, TimeUnit.SECONDS)
+        .connectTimeout(15, TimeUnit.SECONDS) // Уменьшили до 15 секунд
+        .readTimeout(15, TimeUnit.SECONDS)
         .build()
 
-    suspend fun analyzeBoard(bitmap: Bitmap): AiMove? = withContext(Dispatchers.IO) {
+    suspend fun analyzeBoard(bitmap: Bitmap): Result<AiMove> = withContext(Dispatchers.IO) {
         try {
             val outputStream = ByteArrayOutputStream()
-            bitmap.compress(Bitmap.CompressFormat.JPEG, 70, outputStream)
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 60, outputStream)
             val base64Image = Base64.encodeToString(outputStream.toByteArray(), Base64.NO_WRAP)
 
             val prompt = """
-                Ты профессиональный игрок в Block Blast. 
-                Твоя задача - проанализировать скриншот игры и найти лучший ход.
-                Внизу экрана есть 3 фигуры. На доске 8x8 есть свободные места.
-                Выбери ОДНУ фигуру и найди для неё лучшую клетку.
-                
-                Верни СТРОГО JSON без лишних слов, без форматирования markdown:
-                {"grabX": 150, "grabY": 1800, "dropX": 300, "dropY": 700}
-                
-                Где:
-                grabX, grabY - координаты (в пикселях) центра фигуры, которую ты выбрал.
-                dropX, dropY - координаты (в пикселях) центра клетки на доске, куда нужно поставить фигуру.
-                
-                ВАЖНО: Изображение имеет размер ${bitmap.width}x${bitmap.height} пикселей. Учитывай этот масштаб при расчете координат!
+                Ты играешь в Block Blast. Найди фигуру внизу и клетку на доске 8x8.
+                Верни СТРОГО JSON: {"grabX": 150, "grabY": 1800, "dropX": 300, "dropY": 700}
+                Размер картинки: ${bitmap.width}x${bitmap.height}.
             """.trimIndent()
 
             val json = JSONObject().apply {
@@ -56,31 +46,39 @@ class GeminiAi {
                 }))
             }
 
+            // Ключ в URL, как в браузере
             val url = "https://gemini-proxy.89193240154art.workers.dev/v1beta/models/gemini-2.5-flash:generateContent?key=$apiKey"
+            
             val request = Request.Builder()
                 .url(url)
                 .post(json.toString().toRequestBody("application/json".toMediaType()))
                 .build()
 
             val response = client.newCall(request).execute()
-            val responseBody = response.body?.string() ?: return@withContext null
+            val responseBody = response.body?.string() ?: return@withContext Result.failure(Exception("Пустой ответ"))
+            
+            if (!response.isSuccessful) {
+                return@withContext Result.failure(Exception("HTTP ${response.code}"))
+            }
 
             val jsonResponse = JSONObject(responseBody)
             val text = jsonResponse.getJSONArray("candidates").getJSONObject(0)
                 .getJSONObject("content").getJSONArray("parts").getJSONObject(0).getString("text")
             
-            val cleanJson = text.replace("```json", "").replace("```", "").trim()
-            val moveJson = JSONObject(cleanJson)
+            val startIdx = text.indexOf("{")
+            val endIdx = text.lastIndexOf("}")
+            if (startIdx == -1 || endIdx == -1) return@withContext Result.failure(Exception("Нет JSON от ИИ"))
+            
+            val moveJson = JSONObject(text.substring(startIdx, endIdx + 1))
 
-            AiMove(
+            Result.success(AiMove(
                 moveJson.getDouble("grabX").toFloat(),
                 moveJson.getDouble("grabY").toFloat(),
                 moveJson.getDouble("dropX").toFloat(),
                 moveJson.getDouble("dropY").toFloat()
-            )
+            ))
         } catch (e: Exception) {
-            e.printStackTrace()
-            null
+            Result.failure(Exception(e.javaClass.simpleName))
         }
     }
 }

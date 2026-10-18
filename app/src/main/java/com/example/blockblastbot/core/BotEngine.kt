@@ -23,7 +23,7 @@ class BotEngine(private val readerProvider: () -> ImageReader?) {
         job = scope.launch {
             try { runLoop() }
             catch (e: CancellationException) { throw e }
-            catch (e: Exception) { _status.value = "Ошибка: " + (e.message ?: "unknown") }
+            catch (e: Exception) { _status.value = "Сбой: ${e.message?.take(30)}" }
         }
     }
     fun pause() { job?.cancel(); job = null; _status.value = "Пауза" }
@@ -32,30 +32,44 @@ class BotEngine(private val readerProvider: () -> ImageReader?) {
     
     private suspend fun runLoop() {
         while (currentCoroutineContext().isActive) {
-            val ts = TouchService.instance
-            if (ts == null) { _status.value = "Нет TouchService!"; delay(1000L); continue }
-            
-            val bitmap = imageMutex.withLock {
-                val reader = readerProvider() ?: return@withLock null
-                val img = reader.acquireLatestImage() ?: return@withLock null
-                try { imageToBitmap(img) } finally { img.close() }
-            }
-            
-            if (bitmap == null) { delay(500L); continue }
-            
-            _status.value = "ИИ анализирует..."
-            val move = ai.analyzeBoard(bitmap)
-            
-            if (move == null) {
-                _status.value = "Ошибка ИИ / сети"
+            try {
+                val ts = TouchService.instance
+                if (ts == null) { _status.value = "Нет TouchService"; delay(1000L); continue }
+                
+                _status.value = "Захват..."
+                val reader = readerProvider() ?: run { delay(500L); continue }
+                val img = reader.acquireLatestImage() ?: run { delay(500L); continue }
+                
+                val bitmap = imageMutex.withLock {
+                    try { 
+                        val bmp = imageToBitmap(img)
+                        Bitmap.createScaledBitmap(bmp, bmp.width / 2, bmp.height / 2, true)
+                    } finally { img.close() }
+                }
+                
+                _status.value = "ИИ анализирует..."
+                val result = ai.analyzeBoard(bitmap)
+                
+                if (result.isFailure) {
+                    _status.value = "Ошибка ИИ: ${result.exceptionOrNull()?.message}"
+                    delay(5000L)
+                    continue
+                }
+                
+                val move = result.getOrNull()!!
+                _status.value = "ИИ ответил! Ставлю..."
+                
+                val scaleFactor = 2f
+                ts.performPieceDrag(
+                    PointF(move.grabX * scaleFactor, move.grabY * scaleFactor), 
+                    PointF(move.dropX * scaleFactor, move.dropY * scaleFactor)
+                )
+                
+                delay(3000L) 
+            } catch (e: Exception) {
+                _status.value = "Ошибка цикла: ${e.message?.take(30)}"
                 delay(3000L)
-                continue
             }
-            
-            _status.value = "Ставлю блок..."
-            ts.performPieceDrag(PointF(move.grabX, move.grabY), PointF(move.dropX, move.dropY))
-            
-            delay(2500L) 
         }
     }
 
